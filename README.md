@@ -1,38 +1,79 @@
-# 🏗️ Enterprise Retail ETL Pipeline
+# 🏗️ Intelligent Retail ETL Pipeline
 
-> A production-grade batch ETL pipeline for daily retail transaction ingestion into BigQuery, orchestrated with Apache Airflow.
+> A production-grade batch ETL pipeline with **AI-powered insights** for daily retail transaction analysis. Combines Apache Airflow orchestration with LangChain + GPT-4 for intelligent reporting.
 
 [![Apache Airflow](https://img.shields.io/badge/Apache%20Airflow-2.8.1-017CEE?logo=apache-airflow)](https://airflow.apache.org/)
 [![Google Cloud](https://img.shields.io/badge/Google%20Cloud-BigQuery-4285F4?logo=google-cloud)](https://cloud.google.com/bigquery)
+[![LangChain](https://img.shields.io/badge/LangChain-0.1.9-green?logo=chainlink)](https://langchain.com/)
+[![OpenAI](https://img.shields.io/badge/OpenAI-GPT--4-412991?logo=openai)](https://openai.com/)
 [![Python](https://img.shields.io/badge/Python-3.11-3776AB?logo=python)](https://python.org)
-
 ---
 
 ## 📊 Architecture
 
 ```mermaid
 flowchart LR
-    subgraph Local["📁 Local Environment"]
-        GEN["🔄 Data Generator<br/>(Python + Faker)"]
+    subgraph Data["📁 Data Layer"]
+        GEN["🔄 Data Generator"]
+        GCS["🪣 Cloud Storage"]
+        BQ["📊 BigQuery"]
     end
     
-    subgraph Airflow["⚙️ Apache Airflow"]
-        DAG["📅 Daily DAG<br/>(retail_batch_etl)"]
+    subgraph Orchestration["⚙️ Airflow"]
+        DAG["📅 Daily DAG"]
     end
     
-    subgraph GCP["☁️ Google Cloud Platform"]
-        GCS["🪣 Cloud Storage<br/>(Raw Data Lake)"]
-        STG["📋 Staging Table<br/>(stg_sales)"]
-        FACT["⭐ Fact Table<br/>(fact_transactions)"]
-        VIEW["📈 BI Views<br/>(daily_revenue)"]
+    subgraph AI["🤖 AI Layer"]
+        LLM["🧠 LangChain + GPT-4"]
+        ANOMALY["📈 Anomaly Detector"]
     end
     
-    GEN --> DAG
-    DAG -->|Upload CSV| GCS
-    GCS -->|Load| STG
-    STG -->|Transform| FACT
-    FACT --> VIEW
+    GEN --> DAG --> GCS --> BQ
+    BQ --> LLM --> |AI Insights| REPORT["📝 Smart Report"]
+    BQ --> ANOMALY --> |Alerts| ALERT["⚠️ Anomaly Alert"]
 ```
+
+---
+
+## 🤖 AI Features (LangChain + GPT-4)
+
+| Module | Description |
+|--------|-------------|
+| **LLM Insights** | GPT-4 powered sales analysis with structured output |
+| **Anomaly Detection** | Statistical + ML anomaly detection (Z-score, IQR) |
+| **Prompt Engineering** | Custom retail analyst persona templates |
+
+### Sample AI Output
+```
+📊 Daily Sales Intelligence Report
+
+## Executive Summary
+Revenue decreased 5.2% compared to yesterday, primarily driven by 
+lower T-Shirt sales in the Hamburg store. Sneakers showed strong 
+performance (+15%) offsetting some losses.
+
+## 💡 Recommendations
+- Run flash sale on T-Shirts to clear inventory
+- Increase Sneakers stock before weekend rush
+```
+
+---
+
+## 🖥️ Streamlit Dashboard
+
+Run the interactive sales analytics dashboard with AI insights:
+
+```bash
+streamlit run app_streamlit.py
+```
+
+**Features:**
+- 📊 Real-time Sales KPIs (Revenue, Avg Order Value)
+- 📈 Interactive visual charts (Daily Trend, Category Split)
+- 🤖 **AI Insights Panel** (Powered by GPT-4)
+- ⚠️ **Anomaly Detection** Alerts
+
+![Streamlit](https://streamlit.io/images/brand/streamlit-logo-secondary-colormark-darktext.png)
 
 ---
 
@@ -44,16 +85,23 @@ flowchart LR
 | 2️⃣ | `upload_to_gcs` | Upload CSV to GCS bucket with date partitioning |
 | 3️⃣ | `load_to_bq_staging` | Load raw data to BigQuery staging table |
 | 4️⃣ | `transform_to_fact` | Transform & insert into star-schema fact table |
+| 5️⃣ | `ai_analysis` | Generate LLM insights + anomaly detection |
+| 6️⃣ | `visualize` | View results in **Streamlit Dashboard** |
 
 ---
 
 ## 🛠️ Tech Stack
 
-- **Orchestration**: Apache Airflow 2.8
-- **Data Warehouse**: Google BigQuery
-- **Data Lake**: Google Cloud Storage
-- **Containerization**: Docker + Docker Compose
-- **Language**: Python 3.11
+**Data Engineering:**
+- Apache Airflow 2.8 (Orchestration)
+- Google BigQuery (Data Warehouse)
+- Google Cloud Storage (Data Lake)
+- Docker + Docker Compose
+
+**AI/ML:**
+- LangChain 0.1.9
+- OpenAI GPT-4
+- Scikit-learn (Anomaly Detection)
 
 ---
 
@@ -102,9 +150,13 @@ ProjectA_Batch_ETL/
 ├── scripts/
 │   ├── data_generator.py      # Synthetic data generator
 │   └── bigquery_setup.sql     # BigQuery schema definitions
+├── ai/                         # 🤖 AI Components
+│   ├── llm_insights.py        # LangChain + GPT-4 analysis
+│   └── anomaly_detector.py    # Statistical anomaly detection
+├── prompts/
+│   └── sales_analyst.txt      # Prompt templates
 ├── logs/                       # Airflow logs
 ├── plugins/                    # Custom Airflow plugins
-├── credentials/                # GCP service account (git-ignored)
 ├── docker-compose.yml
 ├── Dockerfile
 ├── requirements.txt
