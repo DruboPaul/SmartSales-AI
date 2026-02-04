@@ -68,10 +68,10 @@ streamlit run app_streamlit.py
 ```
 
 **Features:**
-- 📊 Real-time Sales KPIs (Revenue, Avg Order Value)
-- 📈 Interactive visual charts (Daily Trend, Category Split)
-- 🤖 **AI Insights Panel** (Powered by GPT-4)
-- ⚠️ **Anomaly Detection** Alerts
+- 🔐 **Secure Key Input**: Enter your OpenAI API Key directly in the sidebar (not saved).
+- 📊 **Real-time Sales KPIs**: Revenue, Avg Order Value, Store Performance.
+- 🤖 **AI Model**: Automatically switches to "Demo Mode" if no key is provided.
+- ⚠️ **Anomaly Detection**: Highlight unusual sales patterns.
 
 ![Streamlit](https://streamlit.io/images/brand/streamlit-logo-secondary-colormark-darktext.png)
 

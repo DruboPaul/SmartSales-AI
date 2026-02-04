@@ -130,26 +130,68 @@ def get_anomalies(df):
     return anomalies
 
 
+def _get_mock_store_ai_analysis(store_rev):
+    """Generate mock AI analysis for store performance (Demo Mode)."""
+    top_store = store_rev.loc[store_rev['revenue'].idxmax()]
+    lowest_store = store_rev.loc[store_rev['revenue'].idxmin()]
+    online_store = store_rev[store_rev['store'].str.contains('Online', case=False)]
+    
+    analysis = f"""
+🤖 **AI Store Performance Analysis** (Demo Mode)
+
+**🏆 Top Performer**: {top_store['store']} is leading with exceptional performance. 
+Consider replicating their strategies (staffing, promotions, inventory management) across other locations.
+
+**📈 Growth Opportunity**: {lowest_store['store']} shows potential for improvement. 
+Recommend conducting customer satisfaction surveys and analyzing foot traffic patterns.
+
+**💡 Strategic Recommendations**:
+• Increase marketing budget for underperforming stores
+• Implement cross-store best practice sharing programs
+• Consider seasonal promotions to boost overall performance
+"""
+    if len(online_store) > 0:
+        analysis += f"\n**🌐 Digital Channel**: Online_Store contributes ${online_store['revenue'].values[0]:,.0f}. Focus on omnichannel integration for higher conversion."
+    
+    return analysis
+
+
 # ============================================
 # Main Dashboard
 # ============================================
 def main():
-    # Sidebar
+    # Sidebar Configuration
     st.sidebar.image("https://img.icons8.com/fluency/96/analytics.png", width=80)
     st.sidebar.title("🎛️ Controls")
     
+    # 🔐 Secure API Key Input
+    with st.sidebar.expander("🔐 AI Settings", expanded=True):
+        api_key_input = st.text_input(
+            "OpenAI API Key", 
+            type="password",
+            placeholder="sk-...",
+            help="Enter your key to enable real AI features. No key? Demo mode will use mock data."
+        )
+        
+        # Session state for key
+        if api_key_input:
+            os.environ["OPENAI_API_KEY"] = api_key_input
+            use_real_ai = True
+            st.success("✅ AI Active")
+        else:
+            use_real_ai = False
+            st.info("ℹ️ Running in **Demo Mode** (Mock AI)")
+
+    # Data Filters
+    st.sidebar.markdown("### 📅 Filters")
     date_range = st.sidebar.selectbox(
-        "📅 Time Period",
+        "Time Period",
         ["Last 7 Days", "Last 30 Days", "Last 90 Days"]
     )
     
     st.sidebar.markdown("---")
     show_ai_insights = st.sidebar.checkbox("🤖 Show AI Insights", value=True)
     show_anomalies = st.sidebar.checkbox("⚠️ Show Anomalies", value=True)
-    
-    st.sidebar.markdown("---")
-    st.sidebar.markdown("### 🔧 Settings")
-    st.sidebar.info("Connected to: **BigQuery** (Demo Mode)")
     
     # Load data
     df = load_sample_data()
@@ -167,10 +209,19 @@ def main():
     avg_order = total_revenue / total_txns
     top_category = df.groupby('category')['revenue'].sum().idxmax()
     
+    # Format large numbers compactly (e.g., $2.18M)
+    def format_currency(value):
+        if value >= 1_000_000:
+            return f"${value/1_000_000:.2f}M"
+        elif value >= 1_000:
+            return f"${value/1_000:.1f}K"
+        else:
+            return f"${value:,.0f}"
+    
     with col1:
         st.metric(
             label="💰 Total Revenue",
-            value=f"${total_revenue:,.0f}",
+            value=format_currency(total_revenue),
             delta="+12.5% vs last month"
         )
     
@@ -282,6 +333,39 @@ def main():
         yaxis_title="Revenue ($)"
     )
     st.plotly_chart(fig, use_container_width=True)
+    
+    # --- Dynamic Store Performance Description ---
+    top_store = store_rev.loc[store_rev['revenue'].idxmax()]
+    lowest_store = store_rev.loc[store_rev['revenue'].idxmin()]
+    avg_revenue = store_rev['revenue'].mean()
+    total_stores = len(store_rev)
+    
+    # Calculate performance difference
+    perf_diff = ((top_store['revenue'] - lowest_store['revenue']) / lowest_store['revenue']) * 100
+    
+    # Summary info box
+    st.info(
+        f"📊 Performance Summary: Across {total_stores} locations, "
+        f"{top_store['store']} leads with \\${top_store['revenue']:,.0f} in revenue, "
+        f"while {lowest_store['store']} generated \\${lowest_store['revenue']:,.0f}. "
+        f"Average store revenue is \\${avg_revenue:,.0f}. "
+        f"Top performer exceeds lowest by {perf_diff:.1f}%."
+    )
+    
+    # --- Optional AI Insights Button ---
+    if st.button("🤖 Generate AI Store Analysis", key="ai_store_analysis"):
+        with st.spinner("🧠 Analyzing store performance with AI..."):
+            # Check if real AI is available
+            if os.environ.get("OPENAI_API_KEY"):
+                try:
+                    from ai.llm_insights import generate_store_insights
+                    ai_analysis = generate_store_insights(store_rev)
+                except Exception as e:
+                    ai_analysis = _get_mock_store_ai_analysis(store_rev)
+            else:
+                ai_analysis = _get_mock_store_ai_analysis(store_rev)
+            
+            st.info(ai_analysis)
     
     # Footer
     st.markdown("---")
