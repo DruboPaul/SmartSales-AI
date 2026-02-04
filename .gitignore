@@ -1,0 +1,15 @@
+# Ignore credentials
+credentials/
+*.json
+
+# Airflow
+logs/
+airflow.db
+
+# Python
+__pycache__/
+*.pyc
+.env
+
+# OS
+.DS_Store

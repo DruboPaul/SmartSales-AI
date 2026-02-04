@@ -1,0 +1,14 @@
+# Apache Airflow and GCP Providers
+apache-airflow==2.8.1
+apache-airflow-providers-google==10.13.1
+
+# Google Cloud SDK
+google-cloud-storage==2.14.0
+google-cloud-bigquery==3.14.1
+
+# Data Generation
+faker==22.0.0
+pandas==2.1.4
+
+# Utilities
+python-dotenv==1.0.0
