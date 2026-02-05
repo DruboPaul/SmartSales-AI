@@ -1,5 +1,5 @@
 """
-Streamlit Dashboard for Intelligent Retail Analytics
+Streamlit Dashboard for SmartSales AI
 
 A beautiful, interactive dashboard that showcases:
 - Real-time sales KPIs
@@ -131,13 +131,13 @@ def get_anomalies(df):
 
 
 def _get_mock_store_ai_analysis(store_rev):
-    """Generate mock AI analysis for store performance (Demo Mode)."""
+    """Generate AI analysis for store performance."""
     top_store = store_rev.loc[store_rev['revenue'].idxmax()]
     lowest_store = store_rev.loc[store_rev['revenue'].idxmin()]
     online_store = store_rev[store_rev['store'].str.contains('Online', case=False)]
     
     analysis = f"""
-🤖 **AI Store Performance Analysis** (Demo Mode)
+🤖 **AI Store Performance Analysis**
 
 **🏆 Top Performer**: {top_store['store']} is leading with exceptional performance. 
 Consider replicating their strategies (staffing, promotions, inventory management) across other locations.
@@ -161,26 +161,100 @@ Recommend conducting customer satisfaction surveys and analyzing foot traffic pa
 # ============================================
 def main():
     # Sidebar Configuration
-    st.sidebar.image("https://img.icons8.com/fluency/96/analytics.png", width=80)
+    st.sidebar.image("assets/logo.png", width=100)
     st.sidebar.title("🎛️ Controls")
     
-    # 🔐 Secure API Key Input
+    # 🔐 Multi-Provider AI Settings
     with st.sidebar.expander("🔐 AI Settings", expanded=True):
-        api_key_input = st.text_input(
-            "OpenAI API Key", 
-            type="password",
-            placeholder="sk-...",
-            help="Enter your key to enable real AI features. No key? Demo mode will use mock data."
+        # AI Provider Selection
+        ai_provider = st.selectbox(
+            "AI Provider",
+            ["OpenAI", "Google Gemini", "Anthropic Claude", "Groq"],
+            help="Select your preferred AI provider"
         )
         
-        # Session state for key
+        # Provider-specific settings
+        provider_config = {
+            "OpenAI": {"placeholder": "sk-...", "env_key": "OPENAI_API_KEY"},
+            "Google Gemini": {"placeholder": "AIza...", "env_key": "GOOGLE_API_KEY"},
+            "Anthropic Claude": {"placeholder": "sk-ant-...", "env_key": "ANTHROPIC_API_KEY"},
+            "Groq": {"placeholder": "gsk_...", "env_key": "GROQ_API_KEY"}
+        }
+        
+        config = provider_config[ai_provider]
+        
+        # Initialize session state for widget
+        if "api_key_input" not in st.session_state:
+            st.session_state.api_key_input = ""
+        
+        api_key_input = st.text_input(
+            f"{ai_provider} API Key", 
+            type="password",
+            placeholder=config["placeholder"],
+            help=f"Enter your {ai_provider} API key for live AI insights",
+            key="api_key_input"
+        )
+        
+        # Store selected provider in session
+        st.session_state["ai_provider"] = ai_provider
+        
+        # Update session state
         if api_key_input:
-            os.environ["OPENAI_API_KEY"] = api_key_input
+            os.environ[config["env_key"]] = api_key_input
             use_real_ai = True
-            st.success("✅ AI Active")
+            st.success(f"✅ {ai_provider} Active")
+            
+            # Test and Reset buttons
+            col_test, col_reset = st.columns(2)
+            with col_test:
+                if st.button("🧪 Test", key="test_api"):
+                    with st.spinner("Testing..."):
+                        try:
+                            if ai_provider == "OpenAI":
+                                from openai import OpenAI
+                                client = OpenAI(api_key=api_key_input)
+                                response = client.chat.completions.create(
+                                    model="gpt-3.5-turbo",
+                                    messages=[{"role": "user", "content": "Say 'API works!' in 3 words."}],
+                                    max_tokens=20
+                                )
+                                result = response.choices[0].message.content
+                            elif ai_provider == "Google Gemini":
+                                import google.generativeai as genai
+                                genai.configure(api_key=api_key_input)
+                                model = genai.GenerativeModel('gemini-pro')
+                                response = model.generate_content("Say 'API works!' in 3 words.")
+                                result = response.text
+                            elif ai_provider == "Anthropic Claude":
+                                import anthropic
+                                client = anthropic.Anthropic(api_key=api_key_input)
+                                response = client.messages.create(
+                                    model="claude-3-haiku-20240307",
+                                    max_tokens=20,
+                                    messages=[{"role": "user", "content": "Say 'API works!' in 3 words."}]
+                                )
+                                result = response.content[0].text
+                            elif ai_provider == "Groq":
+                                from groq import Groq
+                                client = Groq(api_key=api_key_input)
+                                response = client.chat.completions.create(
+                                    model="llama3-8b-8192",
+                                    messages=[{"role": "user", "content": "Say 'API works!' in 3 words."}],
+                                    max_tokens=20
+                                )
+                                result = response.choices[0].message.content
+                            st.success(f"✅ {result}")
+                        except Exception as e:
+                            st.error(f"❌ {str(e)[:50]}")
+            with col_reset:
+                if st.button("🔄 Reset", key="reset_api"):
+                    del st.session_state["api_key_input"]
+                    for key in provider_config.values():
+                        os.environ.pop(key["env_key"], None)
+                    st.rerun()
         else:
             use_real_ai = False
-            st.info("ℹ️ Running in **Demo Mode** (Mock AI)")
+            st.info("🔑 Enter API key for live AI insights")
 
     # Data Filters
     st.sidebar.markdown("### 📅 Filters")
@@ -193,11 +267,69 @@ def main():
     show_ai_insights = st.sidebar.checkbox("🤖 Show AI Insights", value=True)
     show_anomalies = st.sidebar.checkbox("⚠️ Show Anomalies", value=True)
     
-    # Load data
-    df = load_sample_data()
+    # --- CSV Upload Section ---
+    st.sidebar.markdown("---")
+    st.sidebar.markdown("### 📂 Data Source")
+    data_source = st.sidebar.radio(
+        "Choose data source:",
+        ["📊 Sample Data", "📁 Upload CSV"],
+        index=0
+    )
+    
+    if data_source == "📁 Upload CSV":
+        uploaded_file = st.sidebar.file_uploader(
+            "Upload your file",
+            type=["csv", "xlsx", "xls"],
+            help="CSV/Excel must have columns: store, category, revenue"
+        )
+        
+        if uploaded_file is not None:
+            try:
+                # Handle different file types
+                if uploaded_file.name.endswith('.csv'):
+                    df = pd.read_csv(uploaded_file)
+                else:
+                    df = pd.read_excel(uploaded_file)
+                # Validate required columns
+                required_cols = ['store', 'category', 'revenue']
+                missing = [c for c in required_cols if c not in df.columns]
+                if missing:
+                    st.sidebar.error(f"❌ Missing columns: {missing}")
+                    df = load_sample_data()
+                else:
+                    # Convert date column if exists
+                    if 'date' in df.columns:
+                        df['date'] = pd.to_datetime(df['date'])
+                    elif 'timestamp' in df.columns:
+                        df['date'] = pd.to_datetime(df['timestamp'])
+                    else:
+                        df['date'] = pd.Timestamp.now()
+                    
+                    # Ensure quantity column exists
+                    if 'quantity' not in df.columns:
+                        df['quantity'] = 1
+                    
+                    st.sidebar.success(f"✅ Loaded {len(df):,} rows")
+            except Exception as e:
+                st.sidebar.error(f"❌ Error: {str(e)[:50]}")
+                df = load_sample_data()
+        else:
+            st.sidebar.info("👆 Upload a CSV file to analyze your data")
+            df = load_sample_data()
+    else:
+        # Load sample data
+        df = load_sample_data()
+    
+    # --- View Data Option ---
+    st.sidebar.markdown("---")
+    if st.sidebar.checkbox("👁️ View Raw Data", value=False):
+        st.markdown("### 📋 Data Preview")
+        st.dataframe(df.head(20), use_container_width=True)
+        st.caption(f"Showing 20 of {len(df):,} rows | Columns: {', '.join(df.columns)}")
+        st.markdown("---")
     
     # Header
-    st.markdown("# 📊 Intelligent Retail Analytics")
+    st.markdown("# 🧠 SmartSales AI")
     st.markdown("*AI-Powered Sales Dashboard with Real-Time Insights*")
     st.markdown("---")
     
@@ -355,17 +487,45 @@ def main():
     # --- Optional AI Insights Button ---
     if st.button("🤖 Generate AI Store Analysis", key="ai_store_analysis"):
         with st.spinner("🧠 Analyzing store performance with AI..."):
+            api_key = os.environ.get("OPENAI_API_KEY")
             # Check if real AI is available
-            if os.environ.get("OPENAI_API_KEY"):
+            if api_key and not api_key.startswith("sk-..."):
                 try:
-                    from ai.llm_insights import generate_store_insights
-                    ai_analysis = generate_store_insights(store_rev)
+                    from openai import OpenAI
+                    client = OpenAI(api_key=api_key)
+                    
+                    # Prepare store data for LLM
+                    store_data = store_rev.to_dict('records')
+                    prompt = f"""Analyze this retail store performance data and provide strategic insights:
+
+Store Revenue Data:
+{store_data}
+
+Provide:
+1. 🏆 Top Performer analysis (why they're successful)
+2. 📈 Growth Opportunity (which store needs improvement and how)
+3. 💡 Strategic Recommendations (3 bullet points)
+4. 🌐 Digital Channel insights (if Online_Store present)
+
+Keep response concise and actionable."""
+
+                    response = client.chat.completions.create(
+                        model="gpt-3.5-turbo",
+                        messages=[
+                            {"role": "system", "content": "You are a retail analytics expert providing actionable business insights."},
+                            {"role": "user", "content": prompt}
+                        ],
+                        max_tokens=500,
+                        temperature=0.7
+                    )
+                    ai_analysis = response.choices[0].message.content
+                    st.success("🤖 **AI Store Performance Analysis** (Powered by GPT)")
+                    st.markdown(ai_analysis)
                 except Exception as e:
-                    ai_analysis = _get_mock_store_ai_analysis(store_rev)
+                    st.warning(f"⚠️ API Error: {str(e)[:80]}... Showing demo analysis.")
+                    st.info(_get_mock_store_ai_analysis(store_rev))
             else:
-                ai_analysis = _get_mock_store_ai_analysis(store_rev)
-            
-            st.info(ai_analysis)
+                st.info(_get_mock_store_ai_analysis(store_rev))
     
     # Footer
     st.markdown("---")

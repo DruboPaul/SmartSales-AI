@@ -1,6 +1,6 @@
-# 🏗️ Intelligent Retail ETL Pipeline
+# 🧠 SmartSales AI
 
-> A production-grade batch ETL pipeline with **AI-powered insights** for daily retail transaction analysis. Combines Apache Airflow orchestration with LangChain + GPT-4 for intelligent reporting.
+> An AI-powered retail analytics platform with **intelligent insights** for sales performance analysis. Combines Apache Airflow orchestration with LangChain + GPT-4 for smart reporting.
 
 [![Apache Airflow](https://img.shields.io/badge/Apache%20Airflow-2.8.1-017CEE?logo=apache-airflow)](https://airflow.apache.org/)
 [![Google Cloud](https://img.shields.io/badge/Google%20Cloud-BigQuery-4285F4?logo=google-cloud)](https://cloud.google.com/bigquery)
