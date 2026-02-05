@@ -1,14 +1,10 @@
-# Apache Airflow and GCP Providers
-apache-airflow==2.8.1
-apache-airflow-providers-google==10.13.1
+# ============================================
+# SmartSales AI - Streamlit Cloud Requirements
+# ============================================
 
-# Google Cloud SDK
-google-cloud-storage==2.14.0
-google-cloud-bigquery==3.14.1
-
-# Data Generation
-faker==22.0.0
+# Data Processing
 pandas==2.1.4
+faker==22.0.0
 
 # Utilities
 python-dotenv==1.0.0
@@ -36,5 +32,3 @@ scikit-learn==1.4.0
 streamlit==1.31.0
 plotly==5.18.0
 watchdog==4.0.0
-
-
